@@ -1,0 +1,33 @@
+public class CreateVehiclesCSV {
+// Assuming you have a custom object named vehicles__c with fields brand__c, model__c, and manufacturing__c
+
+    // Method to create and insert CSV file
+    public static void createAndAttachCSV(String VehicleId) {
+        // Query records from vehicles__c object
+        List<Vehicle__c> vehicles = [SELECT Brand__c, Model__c, color__c FROM Vehicle__c];
+        
+        // Create a CSV string with headers
+        String csv = 'Brand,Model,Color\n';
+        
+        // Populate CSV data from queried records
+        for(Vehicle__c vehicle : vehicles) {
+            csv += vehicle.Brand__c + ',' + vehicle.Model__c + ',' + vehicle.color__c + '\n';
+        }
+        System.debug('csv: '+csv);
+        // Create ContentVersion object to represent the CSV file
+        ContentVersion content = new ContentVersion();
+        content.Title = 'VehicleData.csv';
+        content.VersionData = Blob.valueOf(csv);
+        content.PathOnClient = 'VehicleData.csv';
+        insert content;
+         System.debug('content: '+content.Id);
+        // Attach the CSV file to the specified opportunity
+        vehicle__c veh = [SELECT Id FROM vehicle__c WHERE Id = :VehicleId LIMIT 1];
+        ContentDocumentLink cdl = new ContentDocumentLink();
+        cdl.ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :content.Id LIMIT 1].ContentDocumentId;
+        cdl.LinkedEntityId = veh.Id;
+        cdl.ShareType = 'V';
+        cdl.Visibility = 'AllUsers';
+        insert cdl;
+    }
+}
